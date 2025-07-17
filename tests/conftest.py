@@ -64,6 +64,7 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture(scope="session", name="factories")
 def factories_fixture(pytestconfig):
+    print(pytestconfig.getoption("--calculator"))
     if pytestconfig.getoption("--calculator"):
         return Factories(["fleur"])
     return Factories([])
@@ -72,6 +73,7 @@ def factories_fixture(pytestconfig):
 @pytest.fixture(name="factory")
 def factory_fixture(request, factories):
     name, kwargs = request.param
+    print(factories.all_calculators)
     if not factories.installed(name):
         pytest.skip(f"Not installed: {name}")
     if not factories.enabled(name):

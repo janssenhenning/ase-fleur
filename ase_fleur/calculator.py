@@ -210,10 +210,8 @@ class FleurTemplate(CalculatorTemplate):  # type: ignore[misc]
         atoms = read_fleur_outxml(directory / self.output_file)
         return dict(atoms.calc.properties())
 
-    def load_profile(self, cfg):
-        import shlex
-
-        return FleurProfile(shlex.split(cfg["argv"]), shlex.split(cfg["inpgen-argv"]))
+    def load_profile(self, cfg, **kwargs):
+        return FleurProfile.from_config(cfg, self.name, **kwargs)
 
 
 class Fleur(GenericFileIOCalculator):  # type: ignore[misc]

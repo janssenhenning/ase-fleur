@@ -17,19 +17,13 @@ class FleurFactory:
     """
 
     def __init__(self, cfg):
-        print(cfg["argv"])
-        raise ValueError("")
-        # self.executable = executable
-        # self.inpgen_executable = inpgen_executable
-
-    def _profile(self):
-        return FleurProfile([self.executable], [self.inpgen_executable])
+        self.profile = FleurProfile.load_profile(cfg, "fleur")
 
     def version(self):
-        return self._profile().version()
+        return self.profile.version()
 
     def calc(self, **kwargs):
-        return Fleur(profile=self._profile(), **kwargs)
+        return Fleur(profile=self.profile, **kwargs)
 
 
 def pytest_addoption(parser):

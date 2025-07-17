@@ -86,13 +86,13 @@ jobs:
 
       - name: Ensure that Fleur code is correctly installed
         run: |
-          fleur_MPI -version
-          inpgen -version
+          micromamba run -n test-env fleur_MPI -version
+          micromamba run -n test-env inpgen -version
 
       - name: pytest
         run: |
           mkdir -p ~/.config/ase
-          cp test-files/ase_test.conf ~/.config/ase/ase.conf
+          cp test-files/ase_test_micromamba.conf ~/.config/ase/ase.conf
           pytest --calculator
 
       - name: Upload to Codecov

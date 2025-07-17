@@ -80,10 +80,11 @@ jobs:
           condarc: |
             channels:
               - conda-forge
+          create-args: >-
+            fleur=${{ matrix.fleur-version }}
 
-      - name: Install Fleur code from conda
+      - name: Ensure that Fleur code is correctly installed
         run: |
-          mamba install fleur=${{ matrix.fleur-version }}
           fleur_MPI -version
           inpgen -version
 

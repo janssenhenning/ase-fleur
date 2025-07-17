@@ -72,7 +72,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install git+https://gitlab.com/ase/ase.git@master
           pip install -e .[testing]
 
       - name: Setup Conda

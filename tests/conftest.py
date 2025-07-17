@@ -2,7 +2,7 @@
 """
 Test configuration
 """
-from ase_fleur.calculator import FleurProfile, Fleur
+from ase_fleur.calculator import FleurProfile, InpgenProfile, Fleur
 from ase.test.factories import factory as factory_dec, Factories, CalculatorInputs
 from ase.utils import workdir
 
@@ -17,13 +17,14 @@ class FleurFactory:
     """
 
     def __init__(self, cfg):
-        self.profile = FleurProfile.load_profile(cfg, "fleur")
+        self.profile = FleurProfile.from_config(cfg, "fleur")
+        self.inpgen_profile = InpgenProfile.from_config(cfg, "fleur-inpgen")
 
     def version(self):
         return self.profile.version()
 
     def calc(self, **kwargs):
-        return Fleur(profile=self.profile, **kwargs)
+        return Fleur(profile=self.profile, inpgen_profile=self.inpgen_profile, **kwargs)
 
 
 def pytest_addoption(parser):

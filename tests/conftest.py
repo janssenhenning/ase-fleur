@@ -72,7 +72,7 @@ def pytest_generate_tests(metafunc):
 @pytest.fixture(scope="session", name="factories")
 def factories_fixture(pytestconfig):
     if pytestconfig.getoption("--calculator"):
-        return Factories(["fleur"])
+        return Factories(["fleur", "inpgen"])
     return Factories([])
 
 

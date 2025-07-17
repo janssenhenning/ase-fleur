@@ -74,17 +74,12 @@ jobs:
         run: |
           pip install -e .[testing]
 
-      - name: Setup Conda
-        uses: s-weigand/setup-conda@v1
+      - name: Setup Mamba
+        uses: mamba-org/setup-micromamba@v2
         with:
-          conda-channels: conda-forge
-          update-conda: true
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install mamba
-        run: |
-          conda --version
-          conda install mamba
+          condarc: |
+            channels:
+              - conda-forge
 
       - name: Install Fleur code from conda
         run: |

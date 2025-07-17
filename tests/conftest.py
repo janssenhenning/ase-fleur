@@ -16,9 +16,11 @@ class FleurFactory:
     Factory for use in ase tests of the Calculator class
     """
 
-    def __init__(self, executable, inpgen_executable):
-        self.executable = executable
-        self.inpgen_executable = inpgen_executable
+    def __init__(self, cfg):
+        print(cfg["argv"])
+        raise ValueError("")
+        # self.executable = executable
+        # self.inpgen_executable = inpgen_executable
 
     def _profile(self):
         return FleurProfile([self.executable], [self.inpgen_executable])
@@ -28,10 +30,6 @@ class FleurFactory:
 
     def calc(self, **kwargs):
         return Fleur(profile=self._profile(), **kwargs)
-
-    @classmethod
-    def fromconfig(cls, config):
-        return cls(config.executables["fleur"], config.executables["fleur_inpgen"])
 
 
 def pytest_addoption(parser):

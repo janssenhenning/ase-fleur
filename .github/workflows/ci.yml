@@ -90,8 +90,8 @@ jobs:
       - name: Install Fleur code from conda
         run: |
           mamba install fleur=${{ matrix.fleur-version }}
-          fleur_MPI -h
-          inpgen -h
+          fleur_MPI -version
+          inpgen -version
 
       - name: pytest
         run: |

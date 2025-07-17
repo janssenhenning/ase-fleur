@@ -96,7 +96,7 @@ class FleurTemplate(CalculatorTemplate):  # type: ignore[misc]
         self.density_converged = 1e-6
         self.force_convergence = {"force_converged": 0.002, "qfix": 2, "forcealpha": 1.0, "forcemix": "straight"}
 
-    def write_input(self, directory: Path, atoms: Atoms, parameters: dict[str, Any], properties: list[str]) -> None:
+    def write_input(self, profile: FleurProfile, directory: Path, atoms: Atoms, parameters: dict[str, Any], properties: list[str]) -> None:
         """
         Create Fleur inp.xml file from atoms object by calling the
         Fleur inpgen
@@ -202,6 +202,10 @@ class FleurTemplate(CalculatorTemplate):  # type: ignore[misc]
         """
         atoms = read_fleur_outxml(directory / self.output_file)
         return dict(atoms.calc.properties())
+
+    def load_profile(self, cfg):
+        import shlex
+        return FleurProfile(shlex.split(cfg['argv']))
 
 
 class Fleur(GenericFileIOCalculator):  # type: ignore[misc]

@@ -83,6 +83,8 @@ jobs:
               - conda-forge
           create-args: >-
             fleur=${{ matrix.fleur-version }}
+          cache-environment-key: environment-fleur-${{ matrix.fleur-version }}
+          cache-downloads-key: downloads-fleur-${{ matrix.fleur-version }}
 
       - name: Ensure that Fleur code is correctly installed
         run: |
@@ -92,8 +94,7 @@ jobs:
       - name: pytest
         run: |
           export ASE_CONFIG_PATH=${GITHUB_WORKSPACE}/test-files/ase_test_micromamba.conf
-          echo $ASE_CONFIG_PATH
-          pytest --calculator -vv
+          pytest --calculator
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v3

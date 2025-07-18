@@ -106,7 +106,7 @@ class FleurTemplate(CalculatorTemplate):  # type: ignore[misc]
         self.density_converged = 1e-6
         self.force_convergence = {"force_converged": 0.002, "qfix": 2, "forcealpha": 1.0, "forcemix": "straight"}
 
-    def write_input(  # pylint: disable=too-many-positional-arguments
+    def write_input(
         self,
         profile: FleurProfile,
         directory: Path,

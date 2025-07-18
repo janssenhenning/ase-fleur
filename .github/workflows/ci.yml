@@ -91,10 +91,9 @@ jobs:
 
       - name: pytest
         run: |
-          pwd
-          mkdir -p ~/.config/ase
-          cp test-files/ase_test_micromamba.conf ~/.config/ase/ase.conf
-          pytest --calculator -vv
+          export ASE_CONFIG_FILE=${GITHUB_WORKSPACE}/test-files/ase_test_micromamba.conf
+          echo ASE_CONFIG_FILE
+          pytest --calculator
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v3

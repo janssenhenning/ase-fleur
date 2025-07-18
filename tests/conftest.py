@@ -68,8 +68,10 @@ def factories_fixture(pytestconfig):
         factories = Factories(["fleur"])
         info = MachineInformation()
         print(info.cfg.as_dict())
-        if not factories.installed("fleur") or not factories.enabled("fleur"):
+        if not factories.installed("fleur"):
             pytest.fail("Fleur executables could not be configured/found for testing")
+        if not factories.enabled("fleur"):
+            pytest.fail("Testing configuration failed")
     return Factories([])
 
 

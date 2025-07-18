@@ -93,7 +93,7 @@ jobs:
         run: |
           export ASE_CONFIG_FILE=${GITHUB_WORKSPACE}/test-files/ase_test_micromamba.conf
           echo $ASE_CONFIG_FILE
-          pytest --calculator
+          pytest --calculator -vv
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v3

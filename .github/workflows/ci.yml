@@ -91,6 +91,7 @@ jobs:
 
       - name: pytest
         run: |
+          pwd
           mkdir -p ~/.config/ase
           cp test-files/ase_test_micromamba.conf ~/.config/ase/ase.conf
           pytest --calculator -vv

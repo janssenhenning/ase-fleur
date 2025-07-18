@@ -91,8 +91,8 @@ jobs:
 
       - name: pytest
         run: |
-          export ASE_CONFIG_FILE=${GITHUB_WORKSPACE}/test-files/ase_test_micromamba.conf
-          echo $ASE_CONFIG_FILE
+          export ASE_CONFIG_PATH=${GITHUB_WORKSPACE}/test-files/ase_test_micromamba.conf
+          echo $ASE_CONFIG_PATH
           pytest --calculator -vv
 
       - name: Upload to Codecov

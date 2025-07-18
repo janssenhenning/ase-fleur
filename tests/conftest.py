@@ -3,7 +3,7 @@
 Test configuration
 """
 from ase_fleur.calculator import FleurProfile, InpgenProfile, Fleur
-from ase.test.factories import factory as factory_dec, Factories, CalculatorInputs
+from ase.test.factories import factory as factory_dec, Factories, CalculatorInputs, MachineInformation
 from ase.utils import workdir
 
 import pytest
@@ -66,6 +66,8 @@ def pytest_generate_tests(metafunc):
 def factories_fixture(pytestconfig):
     if pytestconfig.getoption("--calculator"):
         factories = Factories(["fleur"])
+        info = MachineInformation()
+        print(info.cfg.asdict())
         if not factories.installed("fleur") or not factories.enabled("fleur"):
             pytest.fail("Fleur executables could not be configured/found for testing")
     return Factories([])

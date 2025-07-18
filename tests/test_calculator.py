@@ -5,6 +5,7 @@ Tests of the fleur calculator class
 from ase.build import bulk
 import pytest
 import numpy as np
+from packaging.version import Version
 
 
 def verify(calc):
@@ -42,4 +43,10 @@ def test_version(factory):
     """
     Test of version parsing
     """
-    assert factory.factory.version() == "6.0"
+    code_version = factory.factory.version()
+    code_version = Version(code_version)  # Ensures that the parsed version has a valid format
+
+    assert (
+        code_version.major >= 6
+    )  # This of course assumes that we have atleast version 6.0 (earliest version on conda-forge)
+    assert code_version.micro == 0  # Up till now the version of the fleur code only has major and minor version

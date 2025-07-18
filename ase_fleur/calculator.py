@@ -12,69 +12,79 @@ from typing import Any
 from masci_tools.io.fleurxmlmodifier import FleurXMLModifier
 from masci_tools.io.parsers.fleur import outxml_parser
 
-from ase.calculators.genericfileio import GenericFileIOCalculator, CalculatorTemplate
+from ase.calculators.genericfileio import GenericFileIOCalculator, CalculatorTemplate, BaseProfile
 from ase import Atoms
 
 from ase_fleur.io import write_fleur_inpgen, read_fleur_outxml
 
 
-class FleurProfile:
+def _parse_fleur_max_version_from_output(base_argv: list[str]) -> str:
     """
-    Profile for executing the Fleur code
+    Parses the MaX version for the provided fleur/inpgen code
 
-    :param argv: arguments for the Fleur code
-    :param inpgen_argv: arguments for the input generator for the Fleur code
+    Note that the passed command must not contain the -version flag
+    """
+    from subprocess import check_output
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as td:
+        out = check_output([*base_argv, "-version"], cwd=td, encoding="utf-8")
+    m = re.findall(r"^\s*MaX\-Release (.*)\(www\.max\-centre\.eu\)", out, flags=re.MULTILINE)
+    if not m:
+        raise ValueError(f"Could not retrieve version from output: {out}")
+    return m[0].strip()
+
+
+class InpgenProfile(BaseProfile):  # type: ignore[misc]
+    """
+    Profile for executing the Fleur input generator code
+
+    :param command: arguments for the Fleur code
+    :param flags: list of arguments/flags to be added to the execution
     """
 
-    def __init__(self, argv: list[str], inpgen_argv: list[str]) -> None:
-        self.argv = argv
-        self.inpgen_argv = inpgen_argv
+    configvars = {"flags"}
+
+    def __init__(self, command, flags=None):
+        super().__init__(command)
+        if flags is None:
+            flags = []
+        self.flags = flags
 
     def version(self) -> str:
         """
         Return the version string of the fleur code in this profile
         """
-        from subprocess import check_output
-        import tempfile
+        return _parse_fleur_max_version_from_output(self._split_command)
 
-        with tempfile.TemporaryDirectory() as td:
-            with open(Path(td) / "err", "w", encoding="utf8") as err:
-                out = check_output(self.argv + ["-info"], stderr=err, cwd=td).decode("utf-8")
-        m = re.findall(r"^\s*MaX\-Release (.*)\(www\.max\-centre\.eu\)", out, flags=re.MULTILINE)
-        if not m:
-            raise ValueError(f"Could not retrieve version from output: {out}")
-        return m[0].strip()
+    def get_calculator_command(self, inputfile):
+        return ["-f", str(inputfile), *self.flags]
 
-    def run(self, directory: Path, outputfile: Path | str, error_file: Path | str) -> None:
+
+class FleurProfile(BaseProfile):  # type: ignore[misc]
+    """
+    Profile for executing the Fleur code
+
+    :param command: arguments for the Fleur code
+    :param flags: list of arguments/flags to be added to the execution
+    """
+
+    configvars = {"flags"}
+
+    def __init__(self, command, flags=None):
+        super().__init__(command)
+        if flags is None:
+            flags = []
+        self.flags = flags
+
+    def version(self) -> str:
         """
-        Run Fleur in the given directory
-
-        :param directory: path to the execution directory
-        :param outputfile: path to the file for the stdout output
-        :param error_file: path to the file for the stderr output
+        Return the version string of the fleur code in this profile
         """
-        from subprocess import check_call
+        return _parse_fleur_max_version_from_output(self._split_command)
 
-        with open(outputfile, "w", encoding="utf8") as fd:
-            with open(error_file, "w", encoding="utf8") as ferr:
-                check_call(self.argv, stdout=fd, stderr=ferr, cwd=directory)
-
-    def run_inpgen(
-        self, directory: Path, inputfile: Path | str, outputfile: Path | str, error_file: Path | str
-    ) -> None:
-        """
-        Run inpgen in the given directory
-
-        :param directory: path to the execution directory
-        :param inputfile: path to the input file for the inpgen
-        :param outputfile: path to the file for the stdout output
-        :param error_file: path to the file for the stderr output
-        """
-        from subprocess import check_call
-
-        with open(outputfile, "w", encoding="utf8") as fd:
-            with open(error_file, "w", encoding="utf8") as ferr:
-                check_call(self.inpgen_argv + ["-f", str(inputfile)], stdout=fd, stderr=ferr, cwd=directory)
+    def get_calculator_command(self, inputfile):
+        return self.flags
 
 
 class FleurTemplate(CalculatorTemplate):  # type: ignore[misc]
@@ -82,7 +92,7 @@ class FleurTemplate(CalculatorTemplate):  # type: ignore[misc]
     Template defining a Fleur Calculation
     """
 
-    def __init__(self, *, inpgen_profile: FleurProfile) -> None:
+    def __init__(self, *, inpgen_profile: InpgenProfile) -> None:
         super().__init__(
             name="fleur",
             implemented_properties=("energy", "forces", "magmom", "magmoms", "efermi", "free_energy", "charges"),
@@ -96,7 +106,14 @@ class FleurTemplate(CalculatorTemplate):  # type: ignore[misc]
         self.density_converged = 1e-6
         self.force_convergence = {"force_converged": 0.002, "qfix": 2, "forcealpha": 1.0, "forcemix": "straight"}
 
-    def write_input(self, directory: Path, atoms: Atoms, parameters: dict[str, Any], properties: list[str]) -> None:
+    def write_input(  # pylint:disable=too-many-positional-arguments
+        self,
+        profile: FleurProfile,
+        directory: Path,
+        atoms: Atoms,
+        parameters: dict[str, Any],
+        properties: list[str],
+    ) -> None:
         """
         Create Fleur inp.xml file from atoms object by calling the
         Fleur inpgen
@@ -125,7 +142,7 @@ class FleurTemplate(CalculatorTemplate):  # type: ignore[misc]
         write_fleur_inpgen(inputfile, atoms, parameters=parameters)
 
         # 2. Run inpgen
-        self.execute_inpgen(directory, self.inpgen_profile, inputfile)
+        self.execute_inpgen(directory, inputfile)
 
         # 3. Modify inp.xml according to set parameters
         fm = FleurXMLModifier()
@@ -163,7 +180,7 @@ class FleurTemplate(CalculatorTemplate):  # type: ignore[misc]
             profile.run(directory, self.stdout_file, self.error_file)
             converged = self.check_convergence(directory)
 
-    def execute_inpgen(self, directory: Path, profile: FleurProfile, inputfile: Path) -> None:
+    def execute_inpgen(self, directory: Path, inputfile: Path) -> None:
         """
         Execute Fleur inpgen to create the Fleur inp.xml
 
@@ -171,7 +188,7 @@ class FleurTemplate(CalculatorTemplate):  # type: ignore[misc]
         :param profile: FleurProfile to use
         :param inputfile: Path to the inputfile to use
         """
-        profile.run_inpgen(directory, inputfile, self.stdout_file, self.error_file)
+        self.inpgen_profile.run(directory, inputfile, self.stdout_file, self.error_file)
 
     def check_convergence(self, directory: Path) -> bool:
         """
@@ -203,16 +220,35 @@ class FleurTemplate(CalculatorTemplate):  # type: ignore[misc]
         atoms = read_fleur_outxml(directory / self.output_file)
         return dict(atoms.calc.properties())
 
+    def load_profile(self, cfg, **kwargs):
+        return FleurProfile.from_config(cfg, self.name, **kwargs)
+
 
 class Fleur(GenericFileIOCalculator):  # type: ignore[misc]
     """
     Ase Calculator for FLEUR calculations
     """
 
-    def __init__(self, *, profile: FleurProfile | None = None, directory: str | Path = ".", **kwargs: Any) -> None:
+    def __init__(
+        self,
+        *,
+        profile: FleurProfile | None = None,
+        inpgen_profile: InpgenProfile | None = None,
+        directory: str | Path = ".",
+        **kwargs: Any,
+    ) -> None:
         if profile is None:
-            profile = FleurProfile(["fleur"], ["inpgen"])
+            profile = FleurProfile(
+                ["fleur"],
+            )
+        if inpgen_profile is None:
+            inpgen_profile = InpgenProfile(
+                ["inpgen"],
+            )
 
         super().__init__(
-            template=FleurTemplate(inpgen_profile=profile), profile=profile, directory=directory, parameters=kwargs
+            template=FleurTemplate(inpgen_profile=inpgen_profile),
+            profile=profile,
+            directory=directory,
+            parameters=kwargs,
         )

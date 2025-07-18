@@ -2,7 +2,7 @@
 """
 Test configuration
 """
-from ase_fleur.calculator import FleurProfile, Fleur
+from ase_fleur.calculator import FleurProfile, InpgenProfile, Fleur
 from ase.test.factories import factory as factory_dec, Factories, CalculatorInputs
 from ase.utils import workdir
 
@@ -16,22 +16,15 @@ class FleurFactory:
     Factory for use in ase tests of the Calculator class
     """
 
-    def __init__(self, executable, inpgen_executable):
-        self.executable = executable
-        self.inpgen_executable = inpgen_executable
-
-    def _profile(self):
-        return FleurProfile([self.executable], [self.inpgen_executable])
+    def __init__(self, cfg):
+        self.profile = FleurProfile.from_config(cfg, "fleur")
+        self.inpgen_profile = InpgenProfile.from_config(cfg, "fleur-inpgen")
 
     def version(self):
-        return self._profile().version()
+        return self.profile.version()
 
     def calc(self, **kwargs):
-        return Fleur(profile=self._profile(), **kwargs)
-
-    @classmethod
-    def fromconfig(cls, config):
-        return cls(config.executables["fleur"], config.executables["fleur_inpgen"])
+        return Fleur(profile=self.profile, inpgen_profile=self.inpgen_profile, **kwargs)
 
 
 def pytest_addoption(parser):
@@ -72,7 +65,10 @@ def pytest_generate_tests(metafunc):
 @pytest.fixture(scope="session", name="factories")
 def factories_fixture(pytestconfig):
     if pytestconfig.getoption("--calculator"):
-        return Factories(["fleur"])
+        factories = Factories(["fleur"])
+        if not factories.installed("fleur") or not factories.enabled("fleur"):
+            pytest.fail("Fleur executables could not be configured/found for testing")
+        return factories
     return Factories([])
 
 

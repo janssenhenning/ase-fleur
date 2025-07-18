@@ -9,19 +9,26 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.8]
+        python-version: ["3.10"]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
+    - name: Cache python dependencies
+      id: cache-pip
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: pip-linting-${{ hashFiles('**/pyproject.toml') }}
+        restore-keys: |
+          pip-linting
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        pip install git+https://gitlab.com/ase/ase.git@master
         pip install -e .[pre-commit,testing]
     - name: Run pre-commit
       run: |
@@ -34,19 +41,26 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.7","3.8","3.9","3.10","3.11"]
+        python-version: ["3.8","3.9","3.10","3.11", "3.12"]
 
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+    - name: Cache python dependencies
+      id: cache-pip
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: pip-${{ matrix.python-version }}-tests-${{ hashFiles('**/pyproject.toml') }}
+        restore-keys: |
+          pip-${{ matrix.python-version }}-tests
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        pip install git+https://gitlab.com/ase/ase.git@master
         pip install -e .[testing]
     - name: pytest
       run: |
@@ -61,44 +75,50 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.8",]
-        fleur-version: ["6.0"]
+        python-version: ["3.10",]
+        fleur-version: ["6.0", "8.0"]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+
+      - name: Cache python dependencies
+        id: cache-pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ matrix.python-version }}-tests-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            pip-${{ matrix.python-version }}-tests
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: |
-          pip install git+https://gitlab.com/ase/ase.git@master
           pip install -e .[testing]
 
-      - name: Setup Conda
-        uses: s-weigand/setup-conda@v1
+      - name: Setup Mamba
+        uses: mamba-org/setup-micromamba@v2
         with:
-          conda-channels: conda-forge
-          update-conda: true
-          python-version: ${{ matrix.python-version }}
+          environment-name: test-env
+          condarc: |
+            channels:
+              - conda-forge
+          create-args: >-
+            fleur=${{ matrix.fleur-version }}
+          cache-environment-key: environment-fleur-${{ matrix.fleur-version }}
+          cache-downloads-key: downloads-fleur-${{ matrix.fleur-version }}
 
-      - name: Install mamba
+      - name: Ensure that Fleur code is correctly installed
         run: |
-          conda --version
-          conda install mamba
-
-      - name: Install Fleur code from conda
-        run: |
-          mamba install fleur=${{ matrix.fleur-version }}
-          fleur_MPI -h
-          inpgen -h
+          micromamba run -n test-env fleur_MPI -version
+          micromamba run -n test-env inpgen -version
 
       - name: pytest
         run: |
-          mkdir -p ~/.config/ase
-          cp test-files/ase_test.conf ~/.config/ase/ase.conf
+          export ASE_CONFIG_PATH=${GITHUB_WORKSPACE}/test-files/ase_test_micromamba.conf
           pytest --calculator
 
       - name: Upload to Codecov

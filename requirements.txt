@@ -1,2 +1,2 @@
-git+https://gitlab.com/ase/ase.git@master
+ase>=3.23.0
 masci-tools~=0.10

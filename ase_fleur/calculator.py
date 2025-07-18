@@ -43,6 +43,8 @@ class InpgenProfile(BaseProfile):  # type: ignore[misc]
     :param flags: list of arguments/flags to be added to the execution
     """
 
+    configvars = {"flags"}
+
     def __init__(self, command, flags=None):
         super().__init__(command)
         if flags is None:
@@ -66,6 +68,8 @@ class FleurProfile(BaseProfile):  # type: ignore[misc]
     :param command: arguments for the Fleur code
     :param flags: list of arguments/flags to be added to the execution
     """
+
+    configvars = {"flags"}
 
     def __init__(self, command, flags=None):
         super().__init__(command)
